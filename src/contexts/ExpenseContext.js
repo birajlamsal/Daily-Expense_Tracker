@@ -1,21 +1,12 @@
 import React, { createContext, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { DEFAULT_SETTINGS, DEFAULT_USER } from '../data/initial';
-import { loadDemoSeeded, loadExpenses, loadSettings, loadUser, saveDemoSeeded, saveExpenses, saveSettings, saveUser } from '../data/storage';
+import { DEFAULT_SETTINGS } from '../data/initial';
+import { loadDemoSeeded, loadExpenses, loadSettings, saveDemoSeeded, saveExpenses, saveSettings } from '../data/storage';
 import { monthKey, parseDateKey, toDateKey, todayKey } from '../utils/date';
 import { generateDemoExpenses } from '../utils/seed';
 
 export const ExpenseContext = createContext(null);
-
-const hashPin = (pin) => {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i += 1) {
-    hash = (hash << 5) - hash + pin.charCodeAt(i);
-    hash |= 0;
-  }
-  return String(hash);
-};
 
 const scheduleDailyReminder = async () => {
   const { status } = await Notifications.requestPermissionsAsync();
@@ -39,23 +30,13 @@ const scheduleDailyReminder = async () => {
 export const ExpenseProvider = ({ children }) => {
   const [expenses, setExpenses] = useState([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [isLocked, setIsLocked] = useState(false);
-  const [user, setUser] = useState(DEFAULT_USER);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
       const savedExpenses = await loadExpenses();
       const savedSettings = await loadSettings();
-      const savedUser = await loadUser();
       const demoSeeded = await loadDemoSeeded();
-
-      const activeUser = savedUser || DEFAULT_USER;
-      setUser(activeUser);
-      if (!savedUser) {
-        await saveUser(activeUser);
-      }
 
       if (!savedExpenses.length && !demoSeeded) {
         const seeded = generateDemoExpenses(365);
@@ -67,7 +48,6 @@ export const ExpenseProvider = ({ children }) => {
       }
 
       setSettings(savedSettings || DEFAULT_SETTINGS);
-      setIsLocked(Boolean(savedSettings?.pinEnabled));
       setLoading(false);
       scheduleDailyReminder();
     };
@@ -118,6 +98,14 @@ export const ExpenseProvider = ({ children }) => {
   const remainingDaily = (date = todayKey()) => dailyAllowance(date) - dailySpent(date);
   const remainingMonthly = (date = new Date()) => settings.monthlyLimit - monthlySpent(date);
 
+  const tomorrowKey = (dateKey = todayKey()) => {
+    const d = parseDateKey(dateKey);
+    d.setDate(d.getDate() + 1);
+    return toDateKey(d);
+  };
+
+  const tomorrowAllowance = () => dailyAllowance(tomorrowKey());
+
   const addExpense = (expense) => {
     const dateKey = toDateKey(expense.date);
     const month = monthKey(expense.date);
@@ -147,61 +135,49 @@ export const ExpenseProvider = ({ children }) => {
     setSettings((prev) => ({ ...prev, ...updates }));
   };
 
-  const enablePin = (pin) => {
-    updateSettings({ pinEnabled: true, pinHash: hashPin(pin) });
-    setIsLocked(true);
+  const exportData = () => {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings,
+      expenses
+    };
+    return JSON.stringify(payload, null, 2);
   };
 
-  const disablePin = () => {
-    updateSettings({ pinEnabled: false, pinHash: '' });
-    setIsLocked(false);
-  };
-
-  const unlock = (pin) => {
-    if (hashPin(pin) === settings.pinHash) {
-      setIsLocked(false);
-      return true;
+  const importData = (jsonString) => {
+    const parsed = JSON.parse(jsonString);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Invalid data format.');
     }
-    return false;
-  };
-
-  const login = (username, password) => {
-    const ok = username === user.username && password === user.password;
-    if (ok) {
-      setIsAuthenticated(true);
+    if (!Array.isArray(parsed.expenses)) {
+      throw new Error('Expenses are missing.');
     }
-    return ok;
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    if (settings.pinEnabled) {
-      setIsLocked(true);
+    if (!parsed.settings || typeof parsed.settings !== 'object') {
+      throw new Error('Settings are missing.');
     }
+    setExpenses(parsed.expenses);
+    setSettings((prev) => ({ ...prev, ...parsed.settings }));
+    saveDemoSeeded(true);
   };
 
   const value = useMemo(
     () => ({
       expenses,
       settings,
-      user,
-      isAuthenticated,
       loading,
-      isLocked,
       dailySpent,
       monthlySpent,
       remainingDaily,
       remainingMonthly,
       dailyAllowance,
+      tomorrowAllowance,
       addExpense,
       updateSettings,
-      enablePin,
-      disablePin,
-      unlock,
-      login,
-      logout
+      exportData,
+      importData
     }),
-    [expenses, settings, user, isAuthenticated, loading, isLocked]
+    [expenses, settings, loading]
   );
 
   return <ExpenseContext.Provider value={value}>{children}</ExpenseContext.Provider>;

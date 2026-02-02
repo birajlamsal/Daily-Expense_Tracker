@@ -22,28 +22,15 @@ A cross‑platform (iOS/Android) React Native app to log expenses, enforce daily
    npm run start
    ```
 
-## Web App (React)
-The web app lives under `web/` and mirrors the mobile data model (demo login + seeded data).
-
-1. Install web dependencies:
-   ```bash
-   cd web
-   npm install
-   ```
-2. Start the web app:
-   ```bash
-   npm run dev
-   ```
 
 ## Assumptions
 - The app uses Expo SDK 54 and local device storage (AsyncStorage). Cloud sync is not implemented.
 - Date input is a simple `YYYY-MM-DD` text field to avoid additional picker dependencies.
-- The PIN lock uses a lightweight hash for local comparison; it is not cryptographic‑grade security.
 - Notifications are scheduled as a daily 9:00 AM reminder using Expo Notifications. If permissions are denied, reminders are skipped.
 - Daily allowance defaults to Rs. 500 and carries over within a month; it resets to Rs. 500 at a new month.
 - Charts use `react-native-chart-kit`; render sizes are based on device width.
-- Demo login is preconfigured as `bhupin / bhupin` for testing.
 - On first run, the app seeds one year of demo expenses if no data exists.
+- Export/Import uses JSON with a version header, settings, and expense list.
 
 ## Project Structure
 - `App.js` – App entry and navigation.

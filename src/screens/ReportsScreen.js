@@ -1,7 +1,7 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import CategoryChart from '../components/CategoryChart';
-import SpendingChart from '../components/SpendingChart';
+import LineChart from '../components/LineChart';
 import { DEFAULT_CATEGORIES } from '../data/initial';
 import { ExpenseContext } from '../contexts/ExpenseContext';
 import { daysInMonth, formatReadable, formatMonthReadable, lastNDaysKeys, monthKey, previousMonthKey, todayKey } from '../utils/date';
@@ -9,6 +9,7 @@ import { daysInMonth, formatReadable, formatMonthReadable, lastNDaysKeys, monthK
 const ReportsScreen = () => {
   const { expenses, settings } = useContext(ExpenseContext);
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [rangeDays, setRangeDays] = useState(7);
 
   const currentMonth = monthKey(new Date());
   const monthLabel = formatMonthReadable(currentMonth);
@@ -29,12 +30,33 @@ const ReportsScreen = () => {
     .reduce((sum, item) => sum + item.amount, 0);
   const prevMonthSaved = settings.dailyLimit * daysInMonth(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)) - prevMonthTotal;
 
-  const last7Keys = lastNDaysKeys(7, new Date());
-  const last7Totals = last7Keys.map((key) =>
+  const rangeKeys = lastNDaysKeys(rangeDays, new Date());
+  const rangeTotals = rangeKeys.map((key) =>
     filteredExpenses
       .filter((item) => item.dateKey === key)
       .reduce((sum, item) => sum + item.amount, 0)
   );
+
+  const rangeChart = useMemo(() => {
+    if (rangeDays <= 7) {
+      return {
+        labels: rangeKeys.map(formatReadable),
+        values: rangeTotals
+      };
+    }
+    const bucketCount = 7;
+    const size = Math.ceil(rangeKeys.length / bucketCount);
+    const labels = [];
+    const values = [];
+    for (let i = 0; i < rangeKeys.length; i += size) {
+      const sliceKeys = rangeKeys.slice(i, i + size);
+      const sliceTotals = rangeTotals.slice(i, i + size);
+      const avg = sliceTotals.reduce((sum, v) => sum + v, 0) / sliceTotals.length;
+      labels.push(`${formatReadable(sliceKeys[0])}–${formatReadable(sliceKeys[sliceKeys.length - 1])}`);
+      values.push(Number(avg.toFixed(0)));
+    }
+    return { labels, values };
+  }, [rangeDays, rangeKeys, rangeTotals]);
 
   const categoryTotals = DEFAULT_CATEGORIES.map((category) => ({
     category,
@@ -92,10 +114,24 @@ const ReportsScreen = () => {
         ))}
       </View>
 
-      <SpendingChart
-        title="Last 7 Days Spending"
-        labels={last7Keys.map(formatReadable)}
-        values={last7Totals}
+      <View style={styles.filterRow}>
+        {[7, 30, 90].map((days) => (
+          <Pressable
+            key={days}
+            onPress={() => setRangeDays(days)}
+            style={[styles.filterChip, rangeDays === days && styles.filterChipActive]}
+          >
+            <Text style={[styles.filterText, rangeDays === days && styles.filterTextActive]}>
+              {days === 7 ? '7 Days' : days === 30 ? '1 Month' : '3 Months'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <LineChart
+        title={`Last ${rangeDays === 7 ? '7 Days' : rangeDays === 30 ? '1 Month' : '3 Months'} Spending`}
+        labels={rangeChart.labels}
+        values={rangeChart.values}
       />
 
       <CategoryChart data={categoryTotals} currency={settings.currency} />

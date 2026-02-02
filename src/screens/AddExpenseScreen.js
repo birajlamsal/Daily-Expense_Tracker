@@ -1,32 +1,45 @@
 import React, { useContext } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SvgUri } from 'react-native-svg';
-import { Asset } from 'expo-asset';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import ExpenseForm from '../components/ExpenseForm';
 import { ExpenseContext } from '../contexts/ExpenseContext';
-const backIconUri = Asset.fromModule(require('../../Images/back.svg')).uri;
+import { backSvg } from '../utils/icons';
 
 const AddExpenseScreen = ({ navigation }) => {
   const { addExpense, settings } = useContext(ExpenseContext);
 
+  const handleSubmit = (payload) => {
+    const result = addExpense(payload);
+    if (result?.ok) {
+      navigation.goBack();
+    }
+    return result;
+  };
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Log an Expense</Text>
-      {Platform.OS === 'ios' ? (
-        <View style={styles.backRow}>
-          <Pressable onPress={() => navigation.goBack()}>
-            <View style={styles.backButton}>
-              <View style={styles.backIcon}>
-                <SvgUri width={18} height={18} uri={backIconUri} />
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+    >
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Log an Expense</Text>
+        {Platform.OS === 'ios' ? (
+          <View style={styles.backRow}>
+            <Pressable onPress={() => navigation.goBack()}>
+              <View style={styles.backButton}>
+                <View style={styles.backIcon}>
+                  <SvgXml width={18} height={18} xml={backSvg} />
+                </View>
+                <Text style={styles.backText}>Back</Text>
               </View>
-              <Text style={styles.backText}>Back</Text>
-            </View>
-          </Pressable>
-        </View>
-      ) : null}
-      <Text style={styles.sub}>Stay within your daily and monthly limits.</Text>
-      <ExpenseForm onSubmit={addExpense} currency={settings.currency} />
-    </ScrollView>
+            </Pressable>
+          </View>
+        ) : null}
+        <Text style={styles.sub}>Stay within your daily and monthly limits.</Text>
+        <ExpenseForm onSubmit={handleSubmit} currency={settings.currency} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

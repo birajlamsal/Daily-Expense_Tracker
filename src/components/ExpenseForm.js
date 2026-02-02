@@ -5,7 +5,7 @@ import { todayKey } from '../utils/date';
 
 const ExpenseForm = ({ onSubmit, currency }) => {
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(todayKey());
+  const [date] = useState(todayKey());
   const [category, setCategory] = useState(DEFAULT_CATEGORIES[0]);
   const [paymentMethod, setPaymentMethod] = useState(DEFAULT_PAYMENT_METHODS[0]);
   const [description, setDescription] = useState('');
@@ -17,11 +17,6 @@ const ExpenseForm = ({ onSubmit, currency }) => {
       Alert.alert('Invalid amount', 'Please enter a valid amount.');
       return;
     }
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert('Invalid date', 'Use format YYYY-MM-DD.');
-      return;
-    }
-
     const payload = {
       amount: parsedAmount,
       date: new Date(`${date}T12:00:00`),
@@ -34,7 +29,6 @@ const ExpenseForm = ({ onSubmit, currency }) => {
     if (result?.ok) {
       setAmount('');
       setDescription('');
-      setDate(todayKey());
       setCategory(DEFAULT_CATEGORIES[0]);
       setPaymentMethod(DEFAULT_PAYMENT_METHODS[0]);
     }
@@ -48,14 +42,6 @@ const ExpenseForm = ({ onSubmit, currency }) => {
         onChangeText={setAmount}
         keyboardType="numeric"
         placeholder={`${currency} 0`}
-        style={styles.input}
-      />
-
-      <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
-      <TextInput
-        value={date}
-        onChangeText={setDate}
-        placeholder="2026-02-02"
         style={styles.input}
       />
 
@@ -121,6 +107,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
     borderColor: '#f0e0d0'
+  },
+  staticField: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#f0e0d0'
+  },
+  staticText: {
+    color: '#6b4f3b',
+    fontWeight: '600'
   },
   chipsRow: {
     flexDirection: 'row',

@@ -1,8 +1,7 @@
 import 'react-native-gesture-handler';
-import React, { useContext } from 'react';
-import { Text, View } from 'react-native';
-import { SvgUri } from 'react-native-svg';
-import { Asset } from 'expo-asset';
+import React, { useContext, useEffect, useMemo, useRef } from 'react';
+import { Animated, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -13,27 +12,89 @@ import HomeScreen from './src/screens/HomeScreen';
 import AddExpenseScreen from './src/screens/AddExpenseScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import LockScreen from './src/screens/LockScreen';
-import LoginScreen from './src/screens/LoginScreen';
+import { homeSvg, reportSvg, settingSvg } from './src/utils/icons';
+
 const iconSources = {
-  Home: Asset.fromModule(require('./Images/home.svg')).uri,
-  Reports: Asset.fromModule(require('./Images/report.svg')).uri,
-  Settings: Asset.fromModule(require('./Images/setting.svg')).uri
+  Home: homeSvg,
+  Reports: reportSvg,
+  Settings: settingSvg
 };
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const TabBar = ({ state, descriptors, navigation }) => {
+  const { width } = useWindowDimensions();
+  const sliderX = useRef(new Animated.Value(0)).current;
+  const tabWidth = width / state.routes.length;
+
+  useEffect(() => {
+    Animated.spring(sliderX, {
+      toValue: state.index * tabWidth,
+      useNativeDriver: true
+    }).start();
+  }, [state.index, tabWidth, sliderX]);
+
+  return (
+    <View style={{ backgroundColor: '#fff8f0', paddingTop: 6, paddingBottom: 10 }}>
+      <View style={{ height: 3, overflow: 'hidden' }}>
+        <Animated.View
+          style={{
+            width: tabWidth,
+            height: 3,
+            backgroundColor: '#3e2a1f',
+            transform: [{ translateX: sliderX }]
+          }}
+        />
+      </View>
+      <View style={{ flexDirection: 'row' }}>
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const label = options.tabBarLabel ?? options.title ?? route.name;
+          const isFocused = state.index === index;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={{ flex: 1, alignItems: 'center', paddingTop: 8, paddingBottom: 6 }}
+            >
+              {options.tabBarIcon
+                ? options.tabBarIcon({ size: 22, focused: isFocused, color: isFocused ? '#3e2a1f' : '#7d6657' })
+                : null}
+              <Text style={{ color: isFocused ? '#3e2a1f' : '#7d6657', marginTop: 4, fontWeight: '700' }}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
 const Tabs = () => (
   <Tab.Navigator
+    tabBar={(props) => <TabBar {...props} />}
     screenOptions={({ route }) => ({
       headerStyle: { backgroundColor: '#f7f3ee' },
       headerTitleStyle: { color: '#3e2a1f' },
-      tabBarStyle: { backgroundColor: '#fff8f0' },
       tabBarActiveTintColor: '#3e2a1f',
       tabBarIcon: ({ size }) => {
-        const uri = iconSources[route.name];
-        return uri ? <SvgUri width={size} height={size} uri={uri} /> : null;
+        const xml = iconSources[route.name];
+        return xml ? <SvgXml width={size} height={size} xml={xml} /> : null;
       }
     })}
   >
@@ -44,7 +105,7 @@ const Tabs = () => (
 );
 
 const RootNavigator = () => {
-  const { isLocked, isAuthenticated, loading } = useContext(ExpenseContext);
+  const { loading } = useContext(ExpenseContext);
 
   if (loading) {
     return (
@@ -52,14 +113,6 @@ const RootNavigator = () => {
         <Text style={{ color: '#3e2a1f' }}>Loading...</Text>
       </View>
     );
-  }
-
-  if (!isAuthenticated) {
-    return <LoginScreen />;
-  }
-
-  if (isLocked) {
-    return <LockScreen />;
   }
 
   return (

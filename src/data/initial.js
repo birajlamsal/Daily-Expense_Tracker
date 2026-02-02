@@ -18,11 +18,5 @@ export const DEFAULT_PAYMENT_METHODS = ['Cash', 'Online'];
 export const DEFAULT_SETTINGS = {
   ...DEFAULT_LIMITS,
   currency: 'Rs.',
-  pinEnabled: false,
-  pinHash: ''
-};
-
-export const DEFAULT_USER = {
-  username: 'bhupin',
-  password: 'bhupin'
+  name: ''
 };
