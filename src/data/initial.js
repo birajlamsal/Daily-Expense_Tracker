@@ -21,3 +21,8 @@ export const DEFAULT_SETTINGS = {
   pinEnabled: false,
   pinHash: ''
 };
+
+export const DEFAULT_USER = {
+  username: 'bhupin',
+  password: 'bhupin'
+};

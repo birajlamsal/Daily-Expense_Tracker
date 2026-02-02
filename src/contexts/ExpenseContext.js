@@ -1,9 +1,10 @@
 import React, { createContext, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { DEFAULT_SETTINGS } from '../data/initial';
-import { loadExpenses, loadSettings, saveExpenses, saveSettings } from '../data/storage';
+import { DEFAULT_SETTINGS, DEFAULT_USER } from '../data/initial';
+import { loadDemoSeeded, loadExpenses, loadSettings, loadUser, saveDemoSeeded, saveExpenses, saveSettings, saveUser } from '../data/storage';
 import { monthKey, toDateKey, todayKey } from '../utils/date';
+import { generateDemoExpenses } from '../utils/seed';
 
 export const ExpenseContext = createContext(null);
 
@@ -39,14 +40,20 @@ export const ExpenseProvider = ({ children }) => {
   const [expenses, setExpenses] = useState([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [isLocked, setIsLocked] = useState(false);
+  const [user, setUser] = useState(DEFAULT_USER);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
       const savedExpenses = await loadExpenses();
       const savedSettings = await loadSettings();
-      setExpenses(savedExpenses);
-      setSettings(savedSettings || DEFAULT_SETTINGS);
+      const savedUser = await loadUser();
+      const demoSeeded = await loadDemoSeeded();
+
+      const activeUser = savedUser || DEFAULT_USER;
+      setUser(activeUser);
+      if (!savedUser) {\n        await saveUser(activeUser);\n      }\n\n      if (!savedExpenses.length && !demoSeeded) {\n        const seeded = generateDemoExpenses(365);\n        setExpenses(seeded);\n        await saveExpenses(seeded);\n        await saveDemoSeeded(true);\n      } else {\n        setExpenses(savedExpenses);\n      }\n\n+      setSettings(savedSettings || DEFAULT_SETTINGS);
       setIsLocked(Boolean(savedSettings?.pinEnabled));
       setLoading(false);
       scheduleDailyReminder();
@@ -145,6 +152,8 @@ export const ExpenseProvider = ({ children }) => {
     () => ({
       expenses,
       settings,
+      user,
+      isAuthenticated,
       loading,
       isLocked,
       dailySpent,
@@ -155,9 +164,11 @@ export const ExpenseProvider = ({ children }) => {
       updateSettings,
       enablePin,
       disablePin,
-      unlock
+      unlock,
+      login,
+      logout
     }),
-    [expenses, settings, loading, isLocked]
+    [expenses, settings, user, isAuthenticated, loading, isLocked]
   );
 
   return <ExpenseContext.Provider value={value}>{children}</ExpenseContext.Provider>;
