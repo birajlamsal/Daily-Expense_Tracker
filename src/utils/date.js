@@ -15,6 +15,22 @@ export const monthKey = (date = new Date()) => {
   return `${year}-${month}`;
 };
 
+export const parseDateKey = (dateKey) => {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+export const daysInMonth = (date = new Date()) => {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+};
+
+export const previousMonthKey = (date = new Date()) => {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() - 1);
+  return monthKey(d);
+};
+
 export const isSameMonth = (a, b) => monthKey(a) === monthKey(b);
 
 export const lastNDaysKeys = (n, endDate = new Date()) => {

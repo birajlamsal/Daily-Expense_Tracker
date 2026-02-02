@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useContext } from 'react';
+import { Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,6 +12,7 @@ import AddExpenseScreen from './src/screens/AddExpenseScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import LockScreen from './src/screens/LockScreen';
+import LoginScreen from './src/screens/LoginScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -31,7 +33,19 @@ const Tabs = () => (
 );
 
 const RootNavigator = () => {
-  const { isLocked } = useContext(ExpenseContext);
+  const { isLocked, isAuthenticated, loading } = useContext(ExpenseContext);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f7f3ee' }}>
+        <Text style={{ color: '#3e2a1f' }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
 
   if (isLocked) {
     return <LockScreen />;

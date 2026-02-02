@@ -3,7 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { ExpenseContext } from '../contexts/ExpenseContext';
 
 const SettingsScreen = () => {
-  const { settings, updateSettings, enablePin, disablePin } = useContext(ExpenseContext);
+  const { settings, updateSettings, enablePin, disablePin, logout, user } = useContext(ExpenseContext);
   const [dailyLimit, setDailyLimit] = useState(String(settings.dailyLimit));
   const [monthlyLimit, setMonthlyLimit] = useState(String(settings.monthlyLimit));
   const [currency, setCurrency] = useState(settings.currency);
@@ -34,6 +34,14 @@ const SettingsScreen = () => {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Settings</Text>
       <Text style={styles.sub}>Control limits, currency, and security.</Text>
+
+      <View style={styles.card}>
+        <Text style={styles.label}>Signed in as</Text>
+        <Text style={styles.helper}>{user.username}</Text>
+        <Pressable style={styles.altButton} onPress={logout}>
+          <Text style={styles.altText}>Logout</Text>
+        </Pressable>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.label}>Daily limit</Text>

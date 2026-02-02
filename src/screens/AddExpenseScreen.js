@@ -1,13 +1,20 @@
 import React, { useContext } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ExpenseForm from '../components/ExpenseForm';
 import { ExpenseContext } from '../contexts/ExpenseContext';
 
-const AddExpenseScreen = () => {
+const AddExpenseScreen = ({ navigation }) => {
   const { addExpense, settings } = useContext(ExpenseContext);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {Platform.OS === 'ios' ? (
+        <View style={styles.backRow}>
+          <Pressable onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <Text style={styles.title}>Log an Expense</Text>
       <Text style={styles.sub}>Stay within your daily and monthly limits.</Text>
       <ExpenseForm onSubmit={addExpense} currency={settings.currency} />
@@ -22,6 +29,13 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20
+  },
+  backRow: {
+    marginBottom: 6
+  },
+  backText: {
+    color: '#c0835a',
+    fontWeight: '700'
   },
   title: {
     fontSize: 26,

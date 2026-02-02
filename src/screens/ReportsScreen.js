@@ -4,7 +4,7 @@ import CategoryChart from '../components/CategoryChart';
 import SpendingChart from '../components/SpendingChart';
 import { DEFAULT_CATEGORIES } from '../data/initial';
 import { ExpenseContext } from '../contexts/ExpenseContext';
-import { formatReadable, formatMonthReadable, lastNDaysKeys, monthKey, todayKey } from '../utils/date';
+import { daysInMonth, formatReadable, formatMonthReadable, lastNDaysKeys, monthKey, previousMonthKey, todayKey } from '../utils/date';
 
 const ReportsScreen = () => {
   const { expenses, settings } = useContext(ExpenseContext);
@@ -20,6 +20,14 @@ const ReportsScreen = () => {
 
   const monthExpenses = filteredExpenses.filter((item) => item.month === currentMonth);
   const monthTotal = monthExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const daysElapsed = new Date().getDate();
+  const savedToDate = settings.dailyLimit * daysElapsed - monthTotal;
+
+  const prevMonth = previousMonthKey(new Date());
+  const prevMonthTotal = expenses
+    .filter((item) => item.month === prevMonth)
+    .reduce((sum, item) => sum + item.amount, 0);
+  const prevMonthSaved = settings.dailyLimit * daysInMonth(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)) - prevMonthTotal;
 
   const last7Keys = lastNDaysKeys(7, new Date());
   const last7Totals = last7Keys.map((key) =>
@@ -58,6 +66,17 @@ const ReportsScreen = () => {
         <View>
           <Text style={styles.summaryLabel}>Monthly remaining</Text>
           <Text style={styles.summaryValue}>{settings.currency} {(settings.monthlyLimit - monthTotal).toFixed(0)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.summaryCard}>
+        <View>
+          <Text style={styles.summaryLabel}>Saved so far</Text>
+          <Text style={styles.summaryValue}>{settings.currency} {savedToDate.toFixed(0)}</Text>
+        </View>
+        <View>
+          <Text style={styles.summaryLabel}>Saved last month</Text>
+          <Text style={styles.summaryValue}>{settings.currency} {prevMonthSaved.toFixed(0)}</Text>
         </View>
       </View>
 

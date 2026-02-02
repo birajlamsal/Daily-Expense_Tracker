@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { DEFAULT_SETTINGS, DEFAULT_USER } from '../data/initial';
 import { loadDemoSeeded, loadExpenses, loadSettings, loadUser, saveDemoSeeded, saveExpenses, saveSettings, saveUser } from '../data/storage';
-import { monthKey, toDateKey, todayKey } from '../utils/date';
+import { monthKey, parseDateKey, toDateKey, todayKey } from '../utils/date';
 import { generateDemoExpenses } from '../utils/seed';
 
 export const ExpenseContext = createContext(null);
@@ -53,7 +53,20 @@ export const ExpenseProvider = ({ children }) => {
 
       const activeUser = savedUser || DEFAULT_USER;
       setUser(activeUser);
-      if (!savedUser) {\n        await saveUser(activeUser);\n      }\n\n      if (!savedExpenses.length && !demoSeeded) {\n        const seeded = generateDemoExpenses(365);\n        setExpenses(seeded);\n        await saveExpenses(seeded);\n        await saveDemoSeeded(true);\n      } else {\n        setExpenses(savedExpenses);\n      }\n\n+      setSettings(savedSettings || DEFAULT_SETTINGS);
+      if (!savedUser) {
+        await saveUser(activeUser);
+      }
+
+      if (!savedExpenses.length && !demoSeeded) {
+        const seeded = generateDemoExpenses(365);
+        setExpenses(seeded);
+        await saveExpenses(seeded);
+        await saveDemoSeeded(true);
+      } else {
+        setExpenses(savedExpenses);
+      }
+
+      setSettings(savedSettings || DEFAULT_SETTINGS);
       setIsLocked(Boolean(savedSettings?.pinEnabled));
       setLoading(false);
       scheduleDailyReminder();
@@ -78,6 +91,14 @@ export const ExpenseProvider = ({ children }) => {
       .filter((item) => toDateKey(item.date) === date)
       .reduce((sum, item) => sum + item.amount, 0);
 
+  const monthlySpentBeforeDate = (dateKey) => {
+    const date = parseDateKey(dateKey);
+    const month = monthKey(date);
+    return expenses
+      .filter((item) => item.month === month && item.dateKey < dateKey)
+      .reduce((sum, item) => sum + item.amount, 0);
+  };
+
   const monthlySpent = (date = new Date()) => {
     const key = monthKey(date);
     return expenses
@@ -85,7 +106,16 @@ export const ExpenseProvider = ({ children }) => {
       .reduce((sum, item) => sum + item.amount, 0);
   };
 
-  const remainingDaily = (date = todayKey()) => settings.dailyLimit - dailySpent(date);
+  const dailyAllowance = (dateKey = todayKey()) => {
+    const date = parseDateKey(dateKey);
+    const day = date.getDate();
+    const base = settings.dailyLimit;
+    const spentBefore = monthlySpentBeforeDate(dateKey);
+    const carryoverBefore = base * (day - 1) - spentBefore;
+    return base + carryoverBefore;
+  };
+
+  const remainingDaily = (date = todayKey()) => dailyAllowance(date) - dailySpent(date);
   const remainingMonthly = (date = new Date()) => settings.monthlyLimit - monthlySpent(date);
 
   const addExpense = (expense) => {
@@ -93,15 +123,6 @@ export const ExpenseProvider = ({ children }) => {
     const month = monthKey(expense.date);
     const dailyRemaining = remainingDaily(dateKey);
     const monthlyRemaining = remainingMonthly(expense.date);
-
-    if (expense.amount > dailyRemaining) {
-      Alert.alert('Daily limit reached', 'You cannot add more expenses for this day.');
-      return { ok: false, reason: 'daily' };
-    }
-    if (expense.amount > monthlyRemaining) {
-      Alert.alert('Monthly limit reached', 'You cannot add more expenses for this month.');
-      return { ok: false, reason: 'monthly' };
-    }
 
     const next = [
       {
@@ -115,12 +136,8 @@ export const ExpenseProvider = ({ children }) => {
     setExpenses(next);
 
     const dailyAfter = dailyRemaining - expense.amount;
-    const monthlyAfter = monthlyRemaining - expense.amount;
-    if (dailyAfter <= settings.dailyLimit * 0.1) {
-      Alert.alert('Daily limit warning', 'You are close to your daily spending limit.');
-    }
-    if (monthlyAfter <= settings.monthlyLimit * 0.1) {
-      Alert.alert('Monthly limit warning', 'You are close to your monthly spending limit.');
+    if (dailyAfter < 0) {
+      Alert.alert('Daily allowance exceeded', 'You have used more than your rolling daily allowance. Tomorrow’s allowance will adjust.');
     }
 
     return { ok: true };
@@ -148,6 +165,21 @@ export const ExpenseProvider = ({ children }) => {
     return false;
   };
 
+  const login = (username, password) => {
+    const ok = username === user.username && password === user.password;
+    if (ok) {
+      setIsAuthenticated(true);
+    }
+    return ok;
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    if (settings.pinEnabled) {
+      setIsLocked(true);
+    }
+  };
+
   const value = useMemo(
     () => ({
       expenses,
@@ -160,6 +192,7 @@ export const ExpenseProvider = ({ children }) => {
       monthlySpent,
       remainingDaily,
       remainingMonthly,
+      dailyAllowance,
       addExpense,
       updateSettings,
       enablePin,

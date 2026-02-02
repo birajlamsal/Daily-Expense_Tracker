@@ -3,7 +3,7 @@
 A cross‑platform (iOS/Android) React Native app to log expenses, enforce daily/monthly spending limits, and generate reports with category breakdowns.
 
 ## Features
-- Daily and monthly spending limits with automatic enforcement.
+- Rolling daily allowance with carry-over inside the month.
 - Expense logging with amount, date, category, payment method, and optional description.
 - Automatic balance updates after every entry.
 - Weekly, monthly, and daily spending reports.
@@ -27,8 +27,10 @@ A cross‑platform (iOS/Android) React Native app to log expenses, enforce daily
 - Date input is a simple `YYYY-MM-DD` text field to avoid additional picker dependencies.
 - The PIN lock uses a lightweight hash for local comparison; it is not cryptographic‑grade security.
 - Notifications are scheduled as a daily 9:00 AM reminder using Expo Notifications. If permissions are denied, reminders are skipped.
-- Limits default to Rs. 500 daily and Rs. 15,000 monthly and can be updated in Settings.
+- Daily allowance defaults to Rs. 500 and carries over within a month; it resets to Rs. 500 at a new month.
 - Charts use `react-native-chart-kit`; render sizes are based on device width.
+- Demo login is preconfigured as `bhupin / bhupin` for testing.
+- On first run, the app seeds one year of demo expenses if no data exists.
 
 ## Project Structure
 - `App.js` – App entry and navigation.

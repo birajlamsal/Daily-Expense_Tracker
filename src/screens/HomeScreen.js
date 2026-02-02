@@ -6,7 +6,7 @@ import { ExpenseContext } from '../contexts/ExpenseContext';
 import { todayKey } from '../utils/date';
 
 const HomeScreen = ({ navigation }) => {
-  const { expenses, settings, remainingDaily, remainingMonthly, dailySpent, monthlySpent } = useContext(ExpenseContext);
+  const { expenses, settings, remainingDaily, remainingMonthly, dailySpent, monthlySpent, dailyAllowance } = useContext(ExpenseContext);
   const today = todayKey();
   const recent = expenses.slice(0, 5);
 
@@ -16,8 +16,8 @@ const HomeScreen = ({ navigation }) => {
       <Text style={styles.sub}>{today}</Text>
 
       <LimitCard
-        title="Daily Limit"
-        limit={settings.dailyLimit}
+        title="Daily Allowance (Rolling)"
+        limit={dailyAllowance(today)}
         remaining={remainingDaily(today)}
         currency={settings.currency}
       />
