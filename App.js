@@ -1,6 +1,8 @@
 import 'react-native-gesture-handler';
 import React, { useContext } from 'react';
 import { Text, View } from 'react-native';
+import { SvgUri } from 'react-native-svg';
+import { Asset } from 'expo-asset';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -13,18 +15,27 @@ import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import LockScreen from './src/screens/LockScreen';
 import LoginScreen from './src/screens/LoginScreen';
+const iconSources = {
+  Home: Asset.fromModule(require('./Images/home.svg')).uri,
+  Reports: Asset.fromModule(require('./Images/report.svg')).uri,
+  Settings: Asset.fromModule(require('./Images/setting.svg')).uri
+};
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 const Tabs = () => (
   <Tab.Navigator
-    screenOptions={{
+    screenOptions={({ route }) => ({
       headerStyle: { backgroundColor: '#f7f3ee' },
       headerTitleStyle: { color: '#3e2a1f' },
       tabBarStyle: { backgroundColor: '#fff8f0' },
-      tabBarActiveTintColor: '#3e2a1f'
-    }}
+      tabBarActiveTintColor: '#3e2a1f',
+      tabBarIcon: ({ size }) => {
+        const uri = iconSources[route.name];
+        return uri ? <SvgUri width={size} height={size} uri={uri} /> : null;
+      }
+    })}
   >
     <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen name="Reports" component={ReportsScreen} />

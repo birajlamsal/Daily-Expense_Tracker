@@ -22,6 +22,19 @@ A cross‑platform (iOS/Android) React Native app to log expenses, enforce daily
    npm run start
    ```
 
+## Web App (React)
+The web app lives under `web/` and mirrors the mobile data model (demo login + seeded data).
+
+1. Install web dependencies:
+   ```bash
+   cd web
+   npm install
+   ```
+2. Start the web app:
+   ```bash
+   npm run dev
+   ```
+
 ## Assumptions
 - The app uses Expo SDK 54 and local device storage (AsyncStorage). Cloud sync is not implemented.
 - Date input is a simple `YYYY-MM-DD` text field to avoid additional picker dependencies.
