@@ -39,3 +39,6 @@ A cross‑platform (iOS/Android) React Native app to log expenses, enforce daily
 - `src/components` – Reusable UI components and charts.
 - `src/data` – Defaults and storage helpers.
 - `src/utils` – Date utilities.
+
+
+App building is left 
